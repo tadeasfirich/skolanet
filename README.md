@@ -2,7 +2,8 @@
 
 Výuková simulace školního informačního systému pro hodinu informatiky v 7. ročníku.
 Žáci hrají role (žák, rodič, učitel, správce) a o každé oprávnění musí požádat správce.
-Sami si tak vyzkouší, co znamená „zakázáno je všechno, co není povoleno“, co jsou nejmenší potřebná práva, proč se práva přidělují rolím a k čemu je záznam aktivit.
+Sami si tak vyzkouší, co znamená „zakázáno je všechno, co není povoleno“, že si oprávnění **nemůžou změnit sami**, co jsou nejmenší potřebná práva, proč se práva přidělují rolím a k čemu je záznam aktivit.
+Volitelně hraje i tajný **škodič**, který zkouší, jestli má třída systém nastavený dobře.
 
 Všechny osoby a data v aplikaci jsou smyšlené.
 
@@ -88,7 +89,7 @@ Firebase má anglické rozhraní. Pokud ho máš česky, názvy tlačítek jsou 
 1. Firebase konzole → **Authentication** → karta **Settings** → **Authorized domains**.
 2. **Add domain** → napiš `TVUJUCET.github.io` (bez https a bez /skolanet) → **Add**.
 
-Hotovo. Otevři odkaz z kroku 2.3. Dole na přihlašovací obrazovce musí být napsáno **„verze 1.0.0 · Firebase“**.
+Hotovo. Otevři odkaz z kroku 2.3. Dole na přihlašovací obrazovce musí být napsáno **„verze 1.1.0 · Firebase“**.
 Když aplikace hlásí chybu, řekne ti, který krok chybí.
 
 ---
@@ -111,7 +112,7 @@ Když aplikace hlásí chybu, řekne ti, který krok chybí.
 4. Vyzkoušej výpadek: na žákovském PC na chvíli odpoj síť. Nahoře se objeví „Spojení se ztratilo, zkouším znovu…“. Po připojení hláška zmizí a nic se neztratí.
 5. Pokud školní síť něco blokuje, správce sítě musí povolit:
    `www.gstatic.com`, `firestore.googleapis.com`, `identitytoolkit.googleapis.com`, `securetoken.googleapis.com`, `TVUJUCET.github.io`
-   (a kvůli písmu volitelně `fonts.googleapis.com`, `fonts.gstatic.com`).
+   (Od verze 1.1 aplikace nepotřebuje Google Fonts. Používá písmo Calibri, které je na školních Windows.)
 
 Po testu hru smaž: *Řízení hry → Ukončit a smazat hru*.
 
@@ -119,13 +120,34 @@ Po testu hru smaž: *Řízení hry → Ukončit a smazat hru*.
 
 ## 4. V hodině
 
-1. **Před hodinou:** *Jsem učitel* → Nová hra → karta **Kartičky** → *Otevřít kartičky k tisku* → Ctrl+P → rozstříhat.
-2. **Veyon:** označ všechny počítače → *Otevřít webovou stránku* → odkaz z kroku 2.3 (bez `#test`).
-3. **Fáze** přepínáš na kartě *Řízení hry*: 0 Připojení → 1 Kolo 1 → 2 Zastavení → 3 Kolo 2 (role) → 4 Reflexe.
-4. **Projektor:** karta *Projektor*. Obsah se mění podle fáze, v reflexi přepínáš sekce.
-5. **Na konci:** stáhni *záznam* a *matici práv* (CSV) → *Ukončit a smazat hru*. Pro další třídu založ novou hru.
+Podrobný průběh hodiny (EUR, 45 minut) je v samostatné přípravě. Tady jen technika.
 
----
+**Den předem**
+1. *Jsem učitel* → **Nová hra**. Nastav počty rolí. Výchozí nastavení je pro 16 žáků:
+   2 správci (každý ve dvojici = 4 žáci), 3 učitelé, 4 rodiče, 4 žáci, 1 škodič.
+   Tabulka ti hned ukáže, kolik žáků je potřeba.
+2. Zadej PIN → **Založit hru a vytisknout kartičky**. Otevře se karta *Kartičky* s velkým kódem hry.
+3. **Vytisknout kartičky** → tiskne se rovnou ze stránky, 8 kartiček na A4. Rozstříhej.
+4. Roztřiď kartičky podle značky v rohu:
+   - **■ PŘIDĚLÍ UČITEL**: správci (a jejich dvojice) a škodič. Vybereš je ty.
+   - **● LOS**: všechno ostatní. Dej do obálky, žáci si losují u dveří.
+
+**Na začátku hodiny**
+1. **Veyon:** označ všechny počítače → *Otevřít webovou stránku* → odkaz z kroku 2.3 (bez `#test`).
+2. **Fáze** přepínáš na kartě *Řízení hry*. U každé fáze vidíš, co udělat, co říct a kolik minut fáze podle plánu má. Nahoře běží stopky fáze. Když plán přetáhneš, zežloutnou.
+3. **Projektor:** karta *Projektor*. Obsah se mění podle fáze. V reflexi postupně: Srovnání kol → Matice → Srovnej se skutečností → Nebezpečná práva → Detektivka → Shrnutí.
+4. **Na konci:** stáhni *záznam* a *matici práv* (CSV) → *Ukončit a smazat hru*.
+
+**Škodič**
+- Navenek je to obyčejný žák (má kód jako ostatní žáci, např. Z5). V menu má navíc položku *Moje poznámky* s šesti tajnými misemi.
+- Mise: vydávat se za někoho jiného, získat zbytečné oprávnění, opravit si známku, přihlásit se do zapomenutého účtu `test.7x`, podívat se na cizí známky, smazat záznam.
+- Heslo k účtu `test.7x` je jedno z nejčastějších hesel (najdeš ho v `app.js` v konstantě `TEST_PASS`). Škodič dostává postupně nápovědy. Každý neúspěšný pokus vidí správci jako bezpečnostní upozornění a můžou účet zablokovat.
+- Kdo je škodič, vidíš ty na kartě *Hráči a práva*. Na projektoru se ukáže až po kliknutí *Odhalit škodiče*.
+- Škodiče lze při zakládání hry vypnout.
+
+**Dvojice**
+- Dvojice = dva žáci u jednoho počítače se stejným kódem. Vytisknou se dvě kartičky „DVOJICE 1/2“ a „2/2“.
+- Žáci ve dvojici vidí nahoře pruh „jeden kliká, druhý radí“ a v zastavení výzvu, ať se vymění.
 
 ## 5. Verzování (aby ses z toho nezbláznil)
 
@@ -134,7 +156,7 @@ Po testu hru smaž: *Řízení hry → Ukončit a smazat hru*.
 - **Nová verze od Clauda:** nahraj nové `app.js` / `index.html` přes **Add file → Upload files**. Stejnojmenné soubory se přepíšou a v historii zůstane i stará verze. **`firebase-config.js` nepřepisuj**, jinak přijdeš o své nastavení.
 - **Pojmenuj funkční verzi:** vpravo *Releases → Create a new release* → tag `v1.0.0` → *Publish release*. Kdykoli se k ní vrátíš.
 - **Vrácení zpět:** otevři starý commit → *Browse files* → stáhni si starou verzi souboru a nahraj ji znovu. Pohodlnější je aplikace **GitHub Desktop** (Historie → pravé tlačítko → *Revert changes in commit*).
-- Číslo verze je v `app.js` na řádku `const APP_VERSION='1.0.0'` a ukazuje se dole na přihlašovací obrazovce. Podle něj poznáš, že žáci vidí novou verzi. Pokud ji nevidí, dej **Ctrl+F5**.
+- Číslo verze je v `app.js` na řádku `const APP_VERSION='1.1.0'` a ukazuje se dole na přihlašovací obrazovce. Podle něj poznáš, že žáci vidí novou verzi. Pokud ji nevidí, dej **Ctrl+F5**.
 
 ---
 
@@ -150,4 +172,6 @@ Po testu hru smaž: *Řízení hry → Ukončit a smazat hru*.
 
 Vše pod `games/{KÓD}` (hry se nemíchají):
 `requests` (žádosti) · `grants` (práva přidělená jednotlivě) · `roles` (role s právy a členy) · `players` (připojení a checklist) · `edits` (změny školních dat) · `messages` (zprávy) · `log` (záznam: jen přibývá, měnit ho nejde, viz `firestore.rules`).
-Záznam už má pole `claimedAs` a připravené typy akcí pro budoucí roli škodiče.
+Škodič je v soupisce hry označený `skodic:true`, jeho mise jsou v `players/{kód}.mise`, za koho se vydával je v žádosti v poli `claimedAs`.
+Testovací účet `test.7x` není hráč: jeho stav je v dokumentu hry (`hasTest`, `testBlocked`, `testFails`).
+**Pravidla databáze (`firestore.rules`) se ve verzi 1.1 nemění.** Není potřeba je znovu vkládat.
