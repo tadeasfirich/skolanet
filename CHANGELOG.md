@@ -1,5 +1,21 @@
 # Změny
 
+## 1.2.0 – 2026-11-11
+### Přidáno – opora pro škodiče (po zpětné vazbě z hodiny)
+Škodič teď uspěje sám, bez nápadné pomoci učitele. „Moje poznámky“ mají čtyři záložky:
+- **Plán**: osm kroků v pořadí. Vždy je vidět jen jeden krok „TEĎ“ s návodem 1–2–3, tlačítkem „Jdi tam“ (otevře správné místo, u opravy známky rovnou předvybere pětku) a nápovědou po stupních. Když se nedá pokračovat, plán řekne proč a co dělat mezitím.
+- **Pátrání**: šest míst ve škole (koš u kopírky, monitor v kabinetu, chodba, školní web…). Stopy se samy zapisují do zápisníku. Heslo k test.7x je slovo z hádanky + číslo z lístečku.
+- **Výmluvník**: škodič vybere učitele, oprávnění, výmluvu a triky (spěch, pochvala). Výmluvník napíše žádost a ukáže, co uvidí správce. Vedle je tahák „Proč to může projít“ (sociální inženýrství) a přehled odeslaných převleků s radou, co zkusit po zamítnutí.
+- **Účet test.7x**: zápisník je hned vedle přihlášení. Nápovědy přibývají s každým špatným pokusem.
+- **Tvoje stopy v záznamu**: škodič vidí, kolik podezřelých stop po sobě nechal.
+- Klávesa **Esc** = rychle schovat poznámky.
+- Detektivka v reflexi ukáže, kde škodič heslo našel. Námět k diskusi: hesla na lístečcích.
+
+### Změněno
+- Heslo k test.7x je pro každou hru jiné (např. vltava2026, ferda123, bajtek7). Učitel ho vidí na kartě Hráči a práva.
+- Heslo se přijme i s velkými písmeny, háčky a mezerou.
+- Správci dostanou upozornění až po 4 špatných pokusech (dřív po 3).
+
 ## 1.1.0 – 2026-10-15
 ### Přidáno
 - Po založení hry se rovnou otevře karta s kódem hry a tlačítkem **Vytisknout kartičky**. Tiskne se přímo ze stránky (žádné vyskakovací okno), 8 kartiček na A4 v designu Tadeáš.

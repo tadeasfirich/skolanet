@@ -38,7 +38,35 @@ const ROLE={
 /* Škodič je tajná role: navenek je to obyčejný žák (příznak skodic:true v soupisce).
    Testovací účet test.7x není hráč. Je to zapomenutý účet, do kterého se škodič může zkusit přihlásit. */
 const TEST={pid:'T1',role:'test',name:'test.7x',sid:null};
-const TEST_PASS='heslo123';
+/* Heslo k test.7x se pro každou hru skládá ze slova a čísla. Škodič ho poskládá ze stop,
+   které najde ve škole (koš, lísteček na monitoru, školní web). Každá třída má jiné heslo. */
+const PW_WORDS=[
+ {w:'vltava',riddle:'„…heslo k účtu test.7x je jméno řeky, u které stojí naše škola…“',web:'„ZŠ Libčice nad Vltavou – škola u řeky Vltavy. Z oken tělocvičny vidíme na vodu.“'},
+ {w:'ferda',riddle:'„…heslo k účtu test.7x je jméno naší školní želvy…“',web:'„Naše školní želva Ferda oslavila 10. narozeniny! Bydlí v kabinetu přírodopisu.“'},
+ {w:'bajtek',riddle:'„…heslo k účtu test.7x je příjmení našeho učitele informatiky…“',web:'„Kroužek robotiky vede pan učitel Petr Bajtek. Přihlášky do konce září.“'}];
+const PW_NUMS=[
+ {kind:'rok',note:'Žlutý lísteček: „Ke každému heslu přidat na konec letošní rok!!“'},
+ {kind:'123',note:'Žlutý lísteček: „Na konec hesla vždycky 123 – to si zapamatuje každý :)“'},
+ {kind:'7',note:'Žlutý lísteček: „Testovací účty: na konec hesla číslo ročníku, pro který je účet.“'}];
+function newTestPw(){const w=Math.floor(Math.random()*PW_WORDS.length),n=Math.floor(Math.random()*PW_NUMS.length);const k=PW_NUMS[n].kind;return {w,n,num:k==='rok'?String(new Date().getFullYear()):k};}
+function testPw(){const t=(S.game&&S.game.testPw)||{w:0,n:1,num:'123'};return {word:PW_WORDS[t.w]||PW_WORDS[0],note:PW_NUMS[t.n]||PW_NUMS[1],num:t.num,pass:(PW_WORDS[t.w]||PW_WORDS[0]).w+t.num};}
+function normPw(x){return String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'');}
+const TEST_ALERT=4; /* po kolika špatných pokusech dostanou správci upozornění */
+/* Místa ve škole, kde škodič pátrá. Klíčové stopy: kos, listek, web. Ostatní jsou pro atmosféru. */
+const PLACES=[
+ {id:'kos',name:'Koš u kopírky',icon:'trash'},
+ {id:'klavesnice',name:'Pod klávesnicí ve sborovně',icon:'key'},
+ {id:'listek',name:'Monitor v kabinetu informatiky',icon:'note'},
+ {id:'nastenka',name:'Nástěnka ve sborovně',icon:'list'},
+ {id:'chodba',name:'Chodba před ředitelnou',icon:'people'},
+ {id:'web',name:'Školní web',icon:'eye'}];
+function placeText(id){const t=testPw();return ({
+ kos:{found:true,head:'Útržek papíru',text:t.word.riddle,tip:'Hádanka. Odpověď hledej tam, kde škola píše sama o sobě.'},
+ klavesnice:{found:false,head:'Nic',text:'Jen drobky od svačiny a jedna kancelářská sponka.'},
+ listek:{found:true,head:'Žlutý lísteček na monitoru',text:t.note.note,tip:'Tohle je číslo, které patří na konec hesla.'},
+ nastenka:{found:false,head:'Nic',text:'Rozpis dozorů a pozvánka na vánoční besídku. O heslech ani slovo.'},
+ chodba:{found:true,head:'Zaslechnutý rozhovor',text:'„Hesla dělám pořád stejně,“ říká správce kolegovi. „Nejdřív slovo, za ním číslo. Malými písmeny, bez háčků, bez mezery.“',tip:'Tohle je návod, jak heslo poskládat.'},
+ web:{found:true,head:'Školní web',text:t.word.web,tip:'Tady je odpověď na hádanku z koše.'}}[id]);}
 const TEST_PERMS=['grades.class','log.view'];
 const ROLE_ORDER=['spravce','ucitel','rodic','zak'];
 const LIMITS={S:[1,3],U:[1,6],R:[0,10],Z:[0,10]};
@@ -141,10 +169,10 @@ const TASKS={
 };
 /* Tajné mise škodiče. Každá testuje jednu zásadu bezpečnosti. */
 const MISSIONS=[
- {id:'m1',name:'Převlek',text:'Pošli správci žádost a vydávej se v ní za někoho jiného (třeba za učitele). Projde to?',rule:'Systém ví, kdo doopravdy píše. Správce má kontrolovat odesílatele, ne to, co tvrdí text.'},
+ {id:'m1',name:'Převlek',text:'Pošli správci žádost a vydávej se v ní za učitele. Schválí ti ji?',rule:'Systém ví, kdo doopravdy píše. Správce má kontrolovat odesílatele, ne to, co tvrdí text.'},
  {id:'m2',name:'Přehnané právo',text:'Získej oprávnění, které žák vůbec nepotřebuje.',rule:'Každý dostane jen tolik oprávnění, kolik potřebuje.'},
  {id:'m3',name:'Lepší známka',text:'Oprav si pětku z matematiky na lepší známku.',rule:'Měnit známky smí jen učitel, a to svoje.'},
- {id:'m4',name:'Zapomenutý účet',text:'Ve škole zůstal starý testovací účet test.7x. Zkus se do něj přihlásit.',rule:'Staré účty se ruší, výchozí hesla se mění. Neúspěšná přihlášení se zapisují.'},
+ {id:'m4',name:'Zapomenutý účet',text:'Najdi ve škole stopy k heslu a přihlas se do starého účtu test.7x.',rule:'Hesla se nepíšou na lístečky a nehází do koše. Staré účty se ruší. Neúspěšná přihlášení se zapisují.'},
  {id:'m5',name:'Šmírák',text:'Zjisti, jaké známky mají ostatní žáci.',rule:'Cizí známky jsou osobní údaje.'},
  {id:'m6',name:'Zameť stopy',text:'Zkus smazat záznam o tom, co jsi v systému dělal.',rule:'Záznam jde jen přidávat. Smazat ho nesmí nikdo, ani správce.'}];
 const RISKY_ZAK=['perms.grant','users.create','log.view','grades.class','grades.write','grades.edit','absence.write','absence.excuse','homework.assign'];
@@ -193,7 +221,7 @@ const MODULES=[
    {id:'fronta',name:'Fronta žádostí',perm:'perms.grant'},{id:'uzivatele',name:'Uživatelé a oprávnění',perm:'perms.grant'},
    {id:'role',name:'Role',perm:'perms.grant',phaseMin:3},{id:'zalozit',name:'Založit uživatele',perm:'users.create'},
    {id:'zaznam',name:'Záznam aktivit',perm:'log.view'}]},
- {id:'tajne',name:'Moje poznámky',icon:'note',secret:true,tabs:[{id:'mise',name:'Poznámky'}]}
+ {id:'tajne',name:'Moje poznámky',icon:'note',secret:true,tabs:[{id:'plan',name:'Plán'},{id:'patrani',name:'Pátrání'},{id:'vymluvnik',name:'Výmluvník'},{id:'ucet',name:'Účet test.7x'}]}
 ];
 function visibleModules(){return MODULES.filter(m=>!m.secret||isSkodic());}
 
@@ -229,6 +257,7 @@ const ICONS={
  note:'<path d="M5 3h10l4 4v14H5z"/><path d="M15 3v4h4M8 12h8M8 16h5"/>',
  eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
  key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/>',
+ trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
  people:'<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5M15 15c3 0 6 1.5 6 4.5"/>'
 };
 function ic(n,s){s=s||18;return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICONS[n]+'</svg>';}
@@ -308,7 +337,7 @@ function makeFirebaseDB(fs){
 /* =====================================================================
    4) STAV APLIKACE
    ===================================================================== */
-const APP_VERSION='1.1.0';
+const APP_VERSION='1.2.0';
 const COLS=['requests','grants','roles','players','edits','messages','log'];
 const S={
   db:null, local:false, ready:false, dl:null,
@@ -664,7 +693,7 @@ function permOptGroups(id,def){
 }
 function securityAlert(){
   if(!hasTest()||!can('perms.grant'))return '';
-  const n=S.game.testFails|0; if(n<3)return '';
+  const n=S.game.testFails|0; if(n<TEST_ALERT)return '';
   if(S.game.testBlocked)return '<div class="alert ok">'+ic('check',18)+'<div><b>Účet test.7x je zablokovaný.</b> Neúspěšných pokusů o přihlášení: '+n+'.</div></div>';
   return '<div class="alert">'+ic('warn',18)+'<div><b>Bezpečnostní upozornění:</b> '+n+'× se někdo neúspěšně pokusil přihlásit do účtu <b>test.7x</b>. <a href="#" data-act="go-users">Správa aplikace → Uživatelé</a></div></div>';
 }
@@ -862,30 +891,163 @@ VIEWS['sprava/zalozit']=me=>'<div class="card" style="max-width:640px"><h2>Zalo�
 VIEWS['sprava/zaznam']=me=>'<div class="card"><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px"><h2 style="margin:0">Záznam aktivit</h2><button class="btn bad sm" data-act="log-del">Smazat záznam</button></div>'+
   (S.ui.logDelTry?'<div class="refuse" style="margin-bottom:12px">'+ic('lock',28)+'<div><b>Záznam nejde smazat ani změnit.</b><p>Do záznamu se dá jen přidávat. Nesmaže ho nikdo – ani správce. Tvůj pokus se právě zapsal.</p></div></div>':'')+vLog(true)+'</div>';
 function missionsOf(pid){const pl=S.cols.players[pid];return (pl&&pl.mise)||{};}
-VIEWS['tajne/mise']=me=>{
+/* =====================================================================
+   ŠKODIČ – opora (scaffolding), aby uspěl bez pomoci učitele
+   Plán = jeden krok „TEĎ“ + nápovědy po stupních. Nástroje: Pátrání, Výmluvník, Účet test.7x.
+   ===================================================================== */
+function stopyOf(pid){const pl=S.cols.players[pid];return (pl&&pl.stopy)||{};}
+function skReqs(pid){return reqList().filter(r=>r.pid===pid).sort((a,b)=>a.at-b.at);}
+function skTraces(pid){
+  /* co o škodiči ví záznam: přihlášení do cizího účtu, pokusy o heslo a smazání, žádosti o nebezpečná práva */
+  return logList().filter(e=>{const mine=e.from===pid||(e.actor&&e.actor.pid===pid);if(!mine)return false;
+    return ['auth.fail','auth.ok','log.delete.try'].indexOf(e.action)>=0||(e.action==='request.create'&&RISKY_ZAK.indexOf(e.target&&e.target.perm)>=0);});
+}
+function skSteps(real){
+  const ph=phase(), m=missionsOf(real.pid), st=stopyOf(real.pid), reqs=skReqs(real.pid), pid=real.pid;
+  const inTest=actingAsTest(), blocked=!!S.game.testBlocked, play=ph===1||ph===3;
+  const realPerms=permsOf(pid); const prev=reqs.filter(r=>r.claimedAs);
+  const prevPend=prev.some(r=>r.status==='pending'), prevDenied=prev.length&&prev.every(r=>r.status==='denied');
+  const clues=!!(st.kos&&st.listek&&st.web);
+  return [
+   {id:'patrani',n:1,title:'Najdi stopy k heslu',done:clues||!!m.m4,ok:true,
+    why:'Ve škole je zapomenutý účet test.7x. Lidé si hesla píšou na papírky – a ty se pak válí všude.',
+    how:['Otevři záložku Pátrání.','Klikej na místa ve škole a prohledej je.','Co najdeš, se samo zapíše do zápisníku.'],go:{tab:'patrani'},
+    hints:['Hledej tam, kde lidé nechávají papíry: v koši, na monitoru.','Útržek z koše je hádanka. Odpověď najdeš na školním webu.','Potřebuješ tři stopy: koš, monitor v kabinetu a školní web. Chodba ti řekne, jak heslo poskládat.']},
+   {id:'splyn',n:2,title:'Splyň s davem',done:reqs.some(r=>!r.claimedAs),ok:play,wait:'Začne v 1. kole.',
+    why:'Kdo dělá jen divné věci, je hned podezřelý. Nejdřív se chovej jako obyčejný žák.',
+    how:['Klikni na Jdi tam (otevře se Úvod).','Dole v „Požádat o oprávnění“ vyber něco normálního, třeba Zobrazit rozvrh.','Napiš normální důvod a odešli.'],go:{mod:'uvod'},
+    hints:['Normální žák chce vidět svoje známky, rozvrh nebo domácí úkoly.','Důvod: „Potřebuju vědět, kdy mám informatiku.“'],
+    trick:'Trik malého kroku: útočník nejdřív dělá obyčejné věci, aby mu lidé věřili.'},
+   {id:'prevlek',n:3,title:'Pošli žádost v převleku',done:prev.length>0,ok:play&&!inTest,wait:inTest?'Nejdřív odejdi z účtu test.7x.':'Začne v 1. kole.',
+    why:'Správce rozhoduje podle toho, co čte. Přesvědč ho, že ti píše učitel.',
+    how:['Otevři záložku Výmluvník.','Vyber učitele, za kterého se vydáš, a co chceš.','Klikni na Odeslat převlek. Pošli ho brzy – fronta je dlouhá a chvíli to trvá.'],go:{tab:'vymluvnik'},
+    hints:['Nejvíc uvěřitelné: učitelka matematiky chce opravit známku z matematiky.','Správce uvidí tvoje skutečné jméno. Proto výmluva musí vysvětlit, proč učitel píše z počítače žáka.']},
+   {id:'ucet',n:4,title:'Přihlas se do účtu test.7x',done:!!m.m4,ok:play&&!blocked,wait:blocked?'Správci účet zablokovali. Tuhle misi už nesplníš – i to je výsledek.':'Přihlásit se půjde od 1. kola. Zatím pátrej.',
+    why:'Zapomenutý účet může víc než ty: vidí známky celé třídy a záznam.',
+    how:['Otevři záložku Účet test.7x.','Poskládej heslo ze stop v zápisníku.','Napiš ho a klikni na Přihlásit.'],go:{tab:'ucet'},
+    hints:['Heslo = slovo z hádanky + číslo z lístečku.','Malými písmeny, bez háčků a bez mezery. Třeba: slovo123.']},
+   {id:'smirak',n:5,title:'Podívej se na známky celé třídy',done:!!m.m5,ok:play&&(inTest||realPerms.has('grades.class')),
+    wait:blocked?'Bez účtu test.7x zkus Výmluvník: požádej o Zobrazit známky celé třídy.':'Nejdřív se přihlas do test.7x. Ten účet známky třídy vidí.',
+    why:'Cizí známky jsou osobní údaje. Uvidí je někdo, kdo nemá?',
+    how:['Klikni na Jdi tam.','Otevře se Hodnocení → Známky třídy.'],go:{mod:'hodnoceni',tab:'trida'},hints:['V menu vlevo Hodnocení, nahoře záložka Známky třídy.']},
+   {id:'zamest',n:6,title:'Zkus zamést stopy',done:!!m.m6,ok:play&&(inTest||realPerms.has('log.view')),
+    wait:'Nejdřív se přihlas do test.7x. Ten účet záznam vidí.',
+    why:'Všechno, co děláš, se zapisuje. Jde to smazat?',
+    how:['Klikni na Jdi tam.','Otevře se Správa aplikace → Záznam aktivit.','Klikni na červené Smazat záznam.'],go:{mod:'sprava',tab:'zaznam'},hints:['Tlačítko Smazat záznam je vpravo nahoře v kartě Záznam aktivit.']},
+   {id:'odchod',n:7,title:'Odejdi z účtu test.7x',done:!!m.m4&&!inTest,ok:inTest,wait:'Až budeš v účtu test.7x.',
+    why:'Vrať se do role obyčejného žáka, ať nejsi nápadný.',how:['Nahoře v modré liště klikni na Odejít z účtu test.7x.'],go:null,hints:[]},
+   {id:'znamka',n:8,title:'Oprav si pětku z matematiky',done:!!m.m3,ok:play&&!inTest&&realPerms.has('grades.edit'),
+    wait:inTest?'Nejdřív odejdi z účtu test.7x.':!prev.length?'Nejdřív musí projít převlek (krok 3) s oprávněním Upravit existující známku.':prevPend?'Čekáš, až správce vyřídí tvůj převlek. Fronta je dlouhá, může to trvat pár minut.':prevDenied?'Správce tě prokoukl. Zkus to ve Výmluvníku znovu: jiný učitel, jiná výmluva. Nebo nejdřív menší právo.':'Na opravu potřebuješ oprávnění Upravit existující známku. Požádej o něj ve Výmluvníku.',
+    why:'Měnit známky smí jen učitel. Dovolí to systém i tobě?',
+    how:['Klikni na Jdi tam. Tvoje pětka je už vybraná.','Nastav lepší známku.','Klikni na Uložit změnu.'],go:{mod:'hodnoceni',tab:'upravit',preset:{'f-ge-sid':real.sid,'f-ge-gid':'g-'+real.sid+'-M-0','f-ge-to':'1'}},hints:[]}
+  ];
+}
+function skHead(real){
+  return '<div class="card dark skhead"><div class="row" style="justify-content:space-between;align-items:center"><div><div class="eyebrow light">Tajná role · krycí jméno STÍN</div><h2 style="margin:4px 0 0">Jsi škodič</h2></div><button class="btn" data-act="mod" data-mod="uvod">'+ic('eye',16)+' Rychle schovat <span class="kbd">Esc</span></button></div>'+
+   '<p style="margin-top:8px">Navenek jsi obyčejný žák <b>'+esc(real.name)+'</b> ('+esc(real.pid)+'). <b>Cíl:</b> splnit co nejvíc misí a nenechat se odhalit. Na konci tě bude třída hledat v záznamu.</p>'+
+   '<p class="small" style="margin-top:6px">Pravidlo: škodíš jen tady ve hře. Nikoho nepodváděj doopravdy a nesahej na cizí počítač. Učitel ti radit nebude – všechno potřebné je tady.</p></div>';
+}
+function skGoBtn(st){if(!st.go)return '';return '<button class="btn primary" data-act="sk-go" data-step="'+st.id+'">'+(st.go.tab&&!st.go.mod?'Otevřít '+esc({patrani:'Pátrání',vymluvnik:'Výmluvník',ucet:'Účet test.7x'}[st.go.tab]):'Jdi tam')+' →</button>';}
+VIEWS['tajne/plan']=me=>{
   const real=realP(); if(!real||!real.skodic)return '<div class="infocard">Nic tu není.</div>';
-  const m=missionsOf(real.pid); const n=MISSIONS.filter(x=>m[x.id]).length; const ph=phase();
-  let h='<div class="card dark"><div class="row" style="justify-content:space-between;align-items:center"><div><div class="eyebrow light">Tajná role</div><h2 style="margin:4px 0 0">Jsi škodič</h2></div><button class="btn" data-act="mod" data-mod="uvod">'+ic('eye',16)+' Rychle schovat</button></div>'+
-   '<p style="margin-top:8px">Navenek jsi obyčejný žák <b>'+esc(real.name)+'</b> ('+esc(real.pid)+'). Zkoušíš, jestli je systém dobře nastavený. Nikomu neprozraď, kdo jsi. Na konci hodiny se třída v záznamu pokusí zjistit, kdo byl škodič.</p>'+
-   '<p class="small" style="margin-top:6px">Pravidlo: škodíš jen tady ve hře. Nikoho nepodváděj doopravdy a nesahej na cizí počítač.</p></div>';
-  if(ph===0)h+='<div class="note" style="margin-top:14px">Mise se spustí v 1. kole. Zatím se rozhlédni jako ostatní.</div>';
-  h+='<div class="card" style="margin-top:14px"><h2>Mise <span class="small muted num">'+n+' / '+MISSIONS.length+'</span></h2><ol class="missions">'+MISSIONS.map(x=>'<li class="'+(m[x.id]?'done':'')+'"><span class="box">'+(m[x.id]?ic('check',14):'')+'</span><div><b>'+esc(x.name)+'</b> – '+esc(x.text)+'</div></li>').join('')+'</ol></div>';
-  /* přihlášení do testovacího účtu */
-  h+='<div class="card" style="margin-top:14px"><h2>'+ic('key',18)+' Přihlášení do jiného účtu</h2>';
-  if(actingAsTest())h+='<p>Jsi přihlášený jako <b>test.7x</b>. Systém si myslí, že jsi testovací účet. <button class="btn sm" data-act="test-leave">Odejít z účtu</button></p>';
-  else if(S.game.testBlocked)h+='<p><b>Účet test.7x je zablokovaný.</b> Správci si všimli neúspěšných pokusů o přihlášení.</p>';
-  else{
-    const tries=(S.cols.players[real.pid]&&S.cols.players[real.pid].testTries)|0;
-    h+='<p class="small muted" style="margin-bottom:8px">Účet <b class="mono">test.7x</b> založili správci na začátku roku a pak na něj zapomněli. Heslo nikdy nezměnili.</p>'+
-     '<div class="row"><div class="field" style="flex:0 1 160px"><label>Účet</label><input type="text" class="mono" value="test.7x" disabled></div><div class="field" style="flex:0 1 220px"><label for="f-test-pass">Heslo</label><input id="f-test-pass" type="text" autocomplete="off" class="mono" value="'+val('f-test-pass')+'"></div><button class="btn primary" data-act="test-login"'+(canRequestNow()?'':' disabled')+'>Přihlásit</button></div>';
-    if(tries)h+='<p class="small" style="margin-top:8px">Neúspěšných pokusů: <b>'+tries+'</b>. Každý pokus se zapisuje do záznamu.</p>';
-    if(tries>=3)h+='<p class="hintline">Nápověda: lidé často nechají heslo, které dostali na začátku. Výchozí hesla bývají jednoduchá.</p>';
-    if(tries>=6)h+='<p class="hintline">Nápověda 2: nejčastější hesla v Česku jsou 123456, heslo, heslo123, qwerty…</p>';
+  const steps=skSteps(real); const m=missionsOf(real.pid); const nm=MISSIONS.filter(x=>m[x.id]).length;
+  const cur=steps.find(x=>!x.done&&x.ok); const ph=phase();
+  let h=skHead(real)+'<div class="skcols"><div class="stack" style="gap:14px">';
+  if(cur){
+    const hn=(S.ui.skHint&&S.ui.skHint[cur.id])|0;
+    h+='<div class="card now"><div class="eyebrow">Teď · krok '+cur.n+' z '+steps.length+'</div><h2 style="margin:4px 0 6px;font-size:24px">'+esc(cur.title)+'</h2><p class="muted">'+esc(cur.why)+'</p>'+
+      '<ol class="howto">'+cur.how.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol>'+
+      '<div class="row" style="margin-top:14px;align-items:center">'+skGoBtn(cur)+(cur.hints.length?'<button class="btn" data-act="sk-hint" data-step="'+cur.id+'"'+(hn>=cur.hints.length?' disabled':'')+'>Nápověda '+Math.min(hn+1,cur.hints.length)+' / '+cur.hints.length+'</button>':'')+'</div>'+
+      cur.hints.slice(0,hn).map(x=>'<p class="hintline">'+esc(x)+'</p>').join('')+
+      (cur.trick?'<div class="trick"><b>'+ic('key',14)+' Trik:</b> '+esc(cur.trick)+'</div>':'')+'</div>';
+  }else{
+    const waiting=steps.filter(x=>!x.done);
+    if(!waiting.length)h+='<div class="card now"><div class="eyebrow">Hotovo</div><h2 style="margin:4px 0">Všechno jsi zkusil!</h2><p>Teď se chovej nenápadně a plň checklist jako ostatní. V reflexi uvidíš, jestli tě třída najde.</p></div>';
+    else h+='<div class="card now"><div class="eyebrow">Teď · chvíli počkej</div><h2 style="margin:4px 0">'+esc(waiting[0].title)+'</h2><p>'+esc(ph===0&&waiting[0].id!=='patrani'?'Až učitel spustí 1. kolo, můžeš pokračovat. Zatím plň checklist jako ostatní.':waiting[0].wait)+'</p><p class="small muted" style="margin-top:6px">Mezitím plň checklist vpravo jako obyčejný žák. Nikdo nic nepozná.</p></div>';
   }
-  h+='</div>';
+  h+='<div class="card"><h3>Celý plán</h3><ol class="skplan">'+steps.map(x=>'<li class="'+(x.done?'done':x===cur?'cur':!x.ok?'wait':'')+'"><span class="box">'+(x.done?ic('check',14):x.n)+'</span><div><b>'+esc(x.title)+'</b>'+(!x.done&&!x.ok&&x!==cur?'<div class="small muted">'+esc(x.wait||'')+'</div>':'')+'</div></li>').join('')+'</ol></div>';
+  h+='</div><div class="stack" style="gap:14px">';
+  h+='<div class="card"><h3>Mise <span class="small muted num">'+nm+' / '+MISSIONS.length+'</span></h3><ul class="missions">'+MISSIONS.map(x=>'<li class="'+(m[x.id]?'done':'')+'"><span class="box">'+(m[x.id]?ic('check',14):'')+'</span><div><b>'+esc(x.name)+'</b><div class="small muted">'+esc(x.text)+'</div></div></li>').join('')+'</ul>'+
+    '<p class="small muted" style="margin-top:8px">Přehnané právo se splní samo, až ti správce dá cokoli, co žák nepotřebuje.</p></div>';
+  const tr=skTraces(real.pid);
+  h+='<div class="card"><h3>Tvoje stopy v záznamu: <span class="num">'+tr.length+'</span></h3><div class="dots">'+(tr.length?tr.map(()=>'<i></i>').join(''):'<span class="small muted">Zatím čisto.</span>')+'</div>'+
+    (tr.length?'<ul class="small" style="margin-top:8px">'+tr.slice(0,4).map(e=>'<li>'+fmtTime(e.t)+' · '+esc(LOG_LABEL[e.action]||e.action)+'</li>').join('')+'</ul>':'')+
+    '<p class="small muted" style="margin-top:8px">Systém zapisuje všechno, co uděláš. Podle těchhle stop tě budou na konci hledat. Méně stop = větší šance, že tě nenajdou.</p></div>';
+  return h+'</div></div>';
+};
+VIEWS['tajne/patrani']=me=>{
+  const real=realP(); if(!real||!real.skodic)return '';
+  const st=stopyOf(real.pid); const busy=S.ui.skSearch; const last=S.ui.skLast;
+  let h='<div class="card"><h2>Pátrání po škole</h2><p class="muted" style="margin-bottom:12px">Klikni na místo a prohledej ho. Někde něco najdeš, jinde nic. Pátrání se nezapisuje do záznamu – po škole se přece chodit smí.</p><div class="skgrid">'+
+    PLACES.map(pl=>{const f=st[pl.id];const t=placeText(pl.id);return '<button class="sktile'+(f?(t.found?' found':' empty'):'')+(busy===pl.id?' busy':'')+'" data-act="sk-search" data-place="'+pl.id+'"'+(busy?' disabled':'')+'>'+ic(pl.icon,26)+'<b>'+esc(pl.name)+'</b><span class="small">'+(busy===pl.id?'Hledám…':f?(t.found?'Něco tu bylo':'Nic tu není'):'Prohledat')+'</span></button>';}).join('')+'</div>';
+  if(last&&st[last]){const t=placeText(last);h+='<div class="'+(t.found?'paper':'note')+'" style="margin-top:14px"><div class="eyebrow">'+esc(t.head)+'</div><p style="margin-top:4px">'+esc(t.text)+'</p>'+(t.tip?'<p class="small muted" style="margin-top:4px">'+esc(t.tip)+'</p>':'')+'</div>';}
+  h+='</div>'+skNotebook(real);
   return h;
 };
-
+function skNotebook(real){
+  const st=stopyOf(real.pid); const keys=['kos','web','listek','chodba'].filter(k=>st[k]);
+  let h='<div class="card" style="margin-top:14px"><h2>Zápisník</h2>';
+  if(!keys.length)return h+'<p class="muted">Zatím nic. Jdi pátrat.</p></div>';
+  h+='<div class="stack" style="gap:8px">'+keys.map(k=>{const t=placeText(k);return '<div class="paper"><div class="eyebrow">'+esc(PLACES.find(p=>p.id===k).name)+'</div><p style="margin-top:3px">'+esc(t.text)+'</p></div>';}).join('')+'</div>';
+  const missing=['kos','web','listek'].filter(k=>!st[k]);
+  if(missing.length)h+='<p class="small muted" style="margin-top:10px">Ještě ti chybí '+missing.length+(missing.length===1?' stopa':' stopy')+'.</p>';
+  else h+='<div class="note" style="margin-top:10px"><b>Máš všechno.</b> Slovo = odpověď na hádanku z koše (najdeš ji na webu). Číslo = z lístečku. Poskládej je podle rozhovoru z chodby. <a href="#" data-act="sk-go" data-step="ucet">Jdi na účet test.7x →</a></div>';
+  return h+'</div>';
+}
+function vmTeachers(){return roster().filter(p=>p.role==='ucitel');}
+const SUBJ_ACC={M:'matematiku',CJ:'češtinu',AJ:'angličtinu',INF:'informatiku',F:'fyziku',Z:'zeměpis'};
+const VM_PERMS=['grades.edit','grades.class','log.view','grades.write'];
+function vmText(real){
+  const ts=vmTeachers(); const t=P_(dv('f-vm-who',(ts.find(x=>x.subj==='M')||ts[0]||{}).pid)); if(!t)return '';
+  const fem=/á$/.test(t.name.trim()); const a=fem?'a':'';
+  const why={ucet:'Nejde mi můj účet, tak píšu z počítače žáka '+real.name+'.',hodina:'Jsem v hodině a můj počítač se aktualizuje, tak píšu od žáka '+real.name+'.',heslo:'Zapomněl'+a+' jsem heslo, tak píšu z účtu žáka '+real.name+'.'}[dv('f-vm-why','ucet')];
+  const want={'grades.edit':'Potřebuju opravit známku, kterou jsem omylem zapsal'+a+' špatně.','grades.class':'Potřebuju před poradou zkontrolovat známky celé třídy.','log.view':'Potřebuju v záznamu najít, kam se mi ztratily známky.','grades.write':'Potřebuju zapsat známky z dnešního testu.'}[dv('f-vm-perm','grades.edit')];
+  return 'Dobrý den, tady '+t.name+', učím '+(SUBJ_ACC[t.subj]||'v 7.X')+' v 7.X. '+why+' '+want+(dv('f-vm-spech',true)?' Spěchá to, pan ředitel to chce do konce hodiny.':'')+(dv('f-vm-mily',true)?' Moc děkuju, jste nejrychlejší správce ve škole!':'');
+}
+VIEWS['tajne/vymluvnik']=me=>{
+  const real=realP(); if(!real||!real.skodic)return '';
+  const ts=vmTeachers(); const mathT=ts.find(t=>t.subj==='M')||ts[0];
+  const q=pendingReqs().length; const can_=canRequestNow()&&!actingAsTest();
+  let h='<div class="skcols"><div class="card"><h2>Výmluvník</h2><p class="muted" style="margin-bottom:12px">Poskládej žádost, ve které se vydáváš za učitele. Výmluvník ji napíše za tebe.</p><div class="stack">'+
+   '<div class="field"><label for="f-vm-who">1 · Za koho se vydáš</label>'+sel('f-vm-who',ts.map(t=>[t.pid,t.name+' – '+(SUBJ[t.subj]||'')]),mathT?mathT.pid:'')+'</div>'+
+   '<div class="field"><label for="f-vm-perm">2 · O co požádáš</label>'+sel('f-vm-perm',VM_PERMS.map(c=>[c,P[c].name]),'grades.edit')+'</div>'+
+   '<div class="field"><label for="f-vm-why">3 · Proč píšeš z počítače žáka</label>'+sel('f-vm-why',[['ucet','Nejde mi můj účet'],['hodina','Můj počítač se aktualizuje'],['heslo','Zapomněl(a) jsem heslo']],'ucet')+'</div>'+
+   '<div class="field"><label>4 · Triky navíc</label><label class="inl"><input type="checkbox" id="f-vm-spech"'+chk('f-vm-spech',true)+'> Spěch – „pan ředitel to chce do konce hodiny“</label><label class="inl"><input type="checkbox" id="f-vm-mily"'+chk('f-vm-mily',true)+'> Pochvala – „jste nejrychlejší správce“</label></div>'+
+   '<div class="field"><label>Takhle to správce uvidí</label><div class="preview">„'+esc(vmText(real))+'“</div><span class="small muted">Odesílatel: <b>'+esc(real.name)+' ('+esc(real.pid)+', žák)</b> – to správce uvidí taky. Proto je důležitá výmluva v kroku 3.</span></div>'+
+   '<div class="row" style="align-items:center"><button class="btn primary big" data-act="vm-send"'+(can_?'':' disabled')+'>Odeslat převlek</button>'+(can_?'':'<span class="small muted">'+(actingAsTest()?'Nejdřív odejdi z účtu test.7x.':'Posílat půjde v 1. a 2. kole.')+'</span>')+'</div>'+
+   (canRequestNow()?'<p class="small">Ve frontě teď čeká <b>'+q+'</b> '+(q===1?'žádost':q>1&&q<5?'žádosti':'žádostí')+'. Čím víc, tím víc správci spěchají a méně kontrolují.</p>':'')+
+   '</div></div>';
+  h+='<div class="stack" style="gap:14px"><div class="card"><h3>Proč to může projít</h3><ul class="tricks">'+
+   '<li><b>Autorita.</b> Učiteli se odporuje hůř než žákovi.</li>'+
+   '<li><b>Dobrý důvod.</b> Výmluva vysvětlí, proč učitel píše ze žákova počítače.</li>'+
+   '<li><b>Spěch.</b> Kdo spěchá, nečte pozorně.</li>'+
+   '<li><b>Pochvala.</b> Milému člověku se snáz vyhoví.</li>'+
+   '<li><b>Malý krok.</b> Nejde to? Zkus nejdřív menší právo, třeba Zobrazit známky celé třídy.</li></ul>'+
+   '<p class="small muted" style="margin-top:8px">Těmhle trikům se říká sociální inženýrství. Opravdoví podvodníci je zkoušejí přes e-mail a telefon. Proto je dobré je znát.</p></div>';
+  const prev=skReqs(real.pid).filter(r=>r.claimedAs);
+  h+='<div class="card"><h3>Moje převleky</h3>'+(prev.length?'<ul class="reqlist">'+prev.map(r=>{const c=P_(r.claimedAs);return '<li><b>'+esc(P[r.perm].name)+'</b><span class="small muted">jako '+esc(c?c.name:r.claimedAs)+'</span>'+
+     (r.status==='approved'?'<span><span class="pill ok">schváleno</span> Prošlo! Správce nezkontroloval, kdo doopravdy píše.</span>':r.status==='denied'?'<span><span class="pill bad">zamítnuto</span> „'+esc(r.denyReason||'')+'“</span><span class="small">Zkus jiného učitele, jinou výmluvu nebo menší právo.</span>':'<span><span class="pill wait">čeká</span> Mezitím dělej další kroky plánu.</span>')+'</li>';}).join('')+'</ul>':'<p class="muted small">Zatím žádný.</p>')+'</div></div></div>';
+  return h;
+};
+VIEWS['tajne/ucet']=me=>{
+  const real=realP(); if(!real||!real.skodic)return '';
+  let h='<div class="skcols"><div class="card"><h2>'+ic('key',18)+' Účet test.7x</h2>';
+  if(actingAsTest())h+='<p>Jsi přihlášený jako <b>test.7x</b>. Systém si myslí, že jsi testovací účet.</p><p class="small muted" style="margin:6px 0 10px">Zpátky do plánu: krok 5 a 6.</p><div class="row"><button class="btn primary" data-act="sk-go" data-step="smirak">Známky třídy →</button><button class="btn primary" data-act="sk-go" data-step="zamest">Záznam aktivit →</button><button class="btn" data-act="test-leave">Odejít z účtu</button></div>';
+  else if(S.game.testBlocked)h+='<p><b>Účet test.7x je zablokovaný.</b> Správci si všimli pokusů o přihlášení. Dobrá práce – jejich.</p>';
+  else{
+    const tries=(S.cols.players[real.pid]&&S.cols.players[real.pid].testTries)|0; const st=stopyOf(real.pid); const clues=st.kos&&st.listek&&st.web;
+    h+='<p class="small muted" style="margin-bottom:10px">Účet založili správci na začátku roku a pak na něj zapomněli.</p>'+
+     (clues?'':'<div class="note" style="margin-bottom:10px">Ještě nemáš všechny stopy. Hádat naslepo je nápadné. <a href="#" data-act="sk-go" data-step="patrani">Jdi pátrat →</a></div>')+
+     '<div class="row"><div class="field" style="flex:0 1 150px"><label>Účet</label><input type="text" class="mono" value="test.7x" disabled></div><div class="field" style="flex:0 1 220px"><label for="f-test-pass">Heslo</label><input id="f-test-pass" type="text" autocomplete="off" spellcheck="false" class="mono" value="'+val('f-test-pass')+'"></div><button class="btn primary" data-act="test-login"'+(canRequestNow()?'':' disabled')+'>Přihlásit</button></div>'+
+     (canRequestNow()?'':'<p class="small muted" style="margin-top:6px">Přihlásit půjde od 1. kola. Zatím pátrej.</p>')+
+     '<p class="small" style="margin-top:10px">Špatné pokusy: <b>'+tries+'</b>. Po '+TEST_ALERT+' špatných pokusech ve třídě dostanou správci upozornění a můžou účet zablokovat.</p>';
+    if(tries>=1)h+='<p class="hintline">Heslo = slovo z hádanky + číslo z lístečku. Bez mezery.</p>';
+    if(tries>=2)h+='<p class="hintline">Jen malá písmena a bez háčků. Hádanku z koše rozluštíš na školním webu.</p>';
+    if(tries>=3&&clues){const t=testPw();h+='<p class="hintline">Slovo má '+t.word.w.length+' písmen a začíná na „'+t.word.w[0]+'“. Číslo má '+t.num.length+(t.num.length===1?' číslici':t.num.length<5?' číslice':' číslic')+'.</p>';}
+  }
+  h+='</div>'+skNotebook(real).replace('style="margin-top:14px"','')+'</div>';
+  return h;
+};
 
 function logList(){return Object.keys(S.cols.log).map(k=>Object.assign({id:k},S.cols.log[k])).sort((a,b)=>b.t-a.t);}
 function logTarget(e){
@@ -970,7 +1132,7 @@ function tHraci(){
    PERMS.map(p=>'<th title="'+esc(p.name)+'">'+p.n+'</th>').join('')+'</tr></thead><tbody>';
   const rows=roster().concat(hasTest()?[TEST]:[]);
   rows.forEach(p=>{const src=permSources(p.pid);const pl=S.cols.players[p.pid]||{};const tasks=(TASKS[p.role]||[]).filter(t=>!t.trap);const d=pl.done||{};const n=tasks.filter(t=>d[t.id]).length;
-    let tcell=p.role==='test'?'<span class="small muted">'+(S.game.testBlocked?'zablokovaný':'neúspěšná přihlášení: '+(S.game.testFails|0))+'</span>':n+' / '+tasks.length+(pl.trap?' <b class="bad" title="Úkol-past prošel">⚠</b>':'');
+    let tcell=p.role==='test'?'<span class="small muted">heslo <b class="mono">'+esc(testPw().pass)+'</b> · '+(S.game.testBlocked?'zablokovaný':'špatné pokusy: '+(S.game.testFails|0))+'</span>':n+' / '+tasks.length+(pl.trap?' <b class="bad" title="Úkol-past prošel">⚠</b>':'');
     if(p.skodic){const m=pl.mise||{};tcell+=' <span class="pill dark" title="'+esc(MISSIONS.filter(x=>m[x.id]).map(x=>x.name).join(', ')||'zatím nic')+'">škodič · mise '+MISSIONS.filter(x=>m[x.id]).length+'/'+MISSIONS.length+'</span>';}
     h+='<tr><td class="l"><span class="mono">'+p.pid+'</span> '+esc(p.name)+' '+roleChip(p.role)+(p.pair?' <span class="pill gray" title="Hrají dva žáci">dvojice</span>':'')+(p.role!=='test'&&!pl.joined?' <span class="pill gray">nepřipojen</span>':'')+'</td><td class="l num">'+tcell+'</td>'+
       PERMS.map(q=>{const c=cellClass(src[q.code]);return '<td class="c '+c+'" title="'+esc(q.name)+'">'+({builtin:'Z',direct:'J',role:'R',both:'R'}[c]||'')+'</td>';}).join('')+'</tr>';});
@@ -1133,8 +1295,15 @@ function pDetective(){
   h+='<div class="card dark"><div class="eyebrow light">Škodič byl</div><h2 style="font-size:30px;margin-top:4px">'+esc(sk.pid)+' · '+esc(sk.name)+'</h2></div>';
   h+='<div class="card"><h2>Co zkoušel a jak to dopadlo</h2><table class="t"><tbody>'+MISSIONS.map(x=>'<tr><td style="width:36px">'+(m[x.id]?'<span class="sym bad">✕</span>':'<span class="sym y">✓</span>')+'</td><td><b>'+esc(x.name)+'</b><div class="small">'+esc(x.text)+'</div></td><td>'+(m[x.id]?'<b>Prošlo.</b> Díra v systému.':'Systém ho zastavil.')+'<div class="small muted">'+esc(x.rule)+'</div></td></tr>').join('')+'</tbody></table>'+
    (claims.length?'<h3 style="margin-top:14px">Za koho se vydával</h3><ul>'+claims.map(r=>{const c=P_(r.claimedAs);return '<li>Žádost o <b>'+esc(P[r.perm].name)+'</b>: tvrdil, že je <b>'+esc(c?c.name:r.claimedAs)+'</b>. Žádost ale přišla z účtu '+esc(sk.pid)+'. Výsledek: '+(r.status==='approved'?'<b>schváleno</b>':r.status==='denied'?'zamítnuto':'čeká')+'.</li>';}).join('')+'</ul>':'')+
+   skPwStory(sk)+
    '<p class="small muted" style="margin-top:10px">✓ = třída obstála · ✕ = škodičovi to prošlo</p></div>';
   return h;
+}
+/* jak škodič přišel k heslu – ve škole, ne v systému, takže to záznam nezachytil */
+function skPwStory(sk){
+  const st=stopyOf(sk.pid); const f=['kos','listek','web','chodba'].filter(k=>st[k]); if(!f.length)return '';
+  return '<h3 style="margin-top:14px">Kde škodič hledal heslo</h3><ul>'+f.map(k=>'<li><b>'+esc(PLACES.find(p=>p.id===k).name)+':</b> '+esc(placeText(k).text)+'</li>').join('')+'</ul>'+
+   '<p class="small" style="margin-top:6px">Heslo bylo <b class="mono">'+esc(testPw().pass)+'</b>. Tohle záznam nezachytí – stalo se to mimo systém. Otázka pro třídu: <i>Co mohli správci udělat jinak?</i></p>';
 }
 function pSummary(){
   return '<h1>Co si z dnešní hodiny odnášíme</h1><div class="summary">'+
@@ -1302,7 +1471,7 @@ const ACT={
   S.ui.teacherErr='Zakládám hru '+code+'…';scheduleRender();
   try{
     const now=Date.now(); const ph_=await hashPin(code,pin);
-    await W(()=>dref('games/'+code).set({code,createdAt:now,pinHash:ph_,phase:0,paused:false,config:cfg,roster:ros,phaseLog:[{phase:0,at:now}],schema:2,hasTest:!!cfg.X,testBlocked:false,testFails:0}),'hra');
+    await W(()=>dref('games/'+code).set({code,createdAt:now,pinHash:ph_,phase:0,paused:false,config:cfg,roster:ros,phaseLog:[{phase:0,at:now}],schema:2,hasTest:!!cfg.X,testBlocked:false,testFails:0,testPw:newTestPw()}),'hra');
     for(const p of ros){
       await W(()=>dref('games/'+code+'/players/'+p.pid).set({pid:p.pid,joined:false,done:{},trap:null,mise:{}}),'hráči');
       await W(()=>dref('games/'+code+'/grants/'+p.pid).set({pid:p.pid,perms:{}}),'práva');
@@ -1490,7 +1659,8 @@ const ACT={
   const real=realP(); if(!real||!real.skodic)return; if(!canRequestNow()){toast('Teď se v systému nedá nic dělat.','lock');return;}
   if(S.game.testBlocked){toast('Účet je zablokovaný.','lock');return;}
   const pass=String(dv('f-test-pass')).trim();
-  if(pass.toLowerCase()===TEST_PASS){
+  if(!pass){toast('Napiš heslo.','lock');return;}
+  if(normPw(pass)===testPw().pass){
     S.session.actAs='T1'; sessSave(S.session); delete S.drafts['f-test-pass']; S.prevPerms=null;
     logEvent('auth.ok',{pid:'T1'},'ok');
     markMission('m4'); toast('Jsi přihlášený jako test.7x.','ok');
@@ -1501,6 +1671,32 @@ const ACT={
     logEvent('auth.fail',{pid:'T1'},'zamítnuto','z počítače hráče '+real.pid);
     toast('Špatné heslo.','bad');
   }
+ },
+ 'sk-go'(d){
+  const real=realP(); if(!real||!real.skodic)return;
+  const st=skSteps(real).find(x=>x.id===d.step); if(!st||!st.go)return;
+  if(st.go.mod){S.ui.mod=st.go.mod;if(st.go.tab)S.ui.tab[st.go.mod]=st.go.tab;}else{S.ui.mod='tajne';S.ui.tab.tajne=st.go.tab;}
+  if(st.go.preset)Object.keys(st.go.preset).forEach(k=>{S.drafts[k]=st.go.preset[k];});
+ },
+ 'sk-hint'(d){S.ui.skHint=S.ui.skHint||{};S.ui.skHint[d.step]=(S.ui.skHint[d.step]|0)+1;},
+ async 'sk-search'(d){
+  const real=realP(); if(!real||!real.skodic||S.ui.skSearch)return;
+  if(S.game.paused||phase()===2||phase()===4){toast('Teď se v systému nedá nic dělat.','lock');return;}
+  if(stopyOf(real.pid)[d.place]){S.ui.skLast=d.place;return;}
+  S.ui.skSearch=d.place; scheduleRender();
+  await new Promise(r=>setTimeout(r,1100));
+  const patch={stopy:{}}; patch.stopy[d.place]=Date.now();
+  try{await W(()=>dref(gp('players')+'/'+real.pid).update(patch),'pátrání');}catch(e){}
+  S.ui.skSearch=null; S.ui.skLast=d.place;
+  const t=placeText(d.place); if(t.found)toast('Našel jsi stopu! Zapsala se do zápisníku.','ok');
+ },
+ async 'vm-send'(){
+  const real=realP(); if(!real||!real.skodic||actingAsTest())return;
+  const who=dv('f-vm-who',(vmTeachers().find(t=>t.subj==='M')||vmTeachers()[0]||{}).pid); const perm=dv('f-vm-perm','grades.edit');
+  if(!who){toast('Ve hře není žádný učitel, za kterého by ses vydával.','lock');return;}
+  S.drafts['f-claim']=who;
+  if(await sendRequest(perm,vmText(real)))toast('Převlek odeslán. Teď čekej, co řekne správce. Mezitím pokračuj v plánu.','ok');
+  delete S.drafts['f-claim'];
  },
  'test-leave'(){if(S.session.actAs){logEvent('auth.leave',{pid:'T1'},'ok');delete S.session.actAs;sessSave(S.session);S.prevPerms=null;S.ui.mod='tajne';}},
  async 'test-block'(){
@@ -1548,7 +1744,7 @@ function onData(){
    13) START
    ===================================================================== */
 function bind(){
-  document.addEventListener('input',e=>{const t=e.target;if(!t.id)return;S.drafts[t.id]=t.type==='checkbox'?t.checked:t.value;if(t.id.indexOf('f-n-')===0||t.id.indexOf('f-p-')===0||t.id==='f-x')scheduleRender();});
+  document.addEventListener('input',e=>{const t=e.target;if(!t.id)return;S.drafts[t.id]=t.type==='checkbox'?t.checked:t.value;if(t.id.indexOf('f-n-')===0||t.id.indexOf('f-p-')===0||t.id==='f-x'||t.id.indexOf('f-vm-')===0)scheduleRender();});
   document.addEventListener('change',e=>{const t=e.target;if(t.id)S.drafts[t.id]=t.type==='checkbox'?t.checked:t.value;
     if(t.dataset.actChange==='logfilter')S.ui.logFilter=t.value;
     if(t.dataset.rerender||t.dataset.actChange){try{t.blur();}catch(x){}scheduleRender();}});
@@ -1561,7 +1757,9 @@ function bind(){
     Promise.resolve().then(()=>fn(el.dataset,el)).catch(err=>{console.error(err);}).finally(()=>{busy.delete(key);scheduleRender();});
   });
   document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&S.ui.mod==='tajne'&&S.session&&!S.session.teacher){S.ui.mod='uvod';scheduleRender();return;}
     if(e.key!=='Enter')return; const t=e.target;
+    if(t.id==='f-test-pass'){e.preventDefault();const b=document.querySelector('[data-act="test-login"]');if(b&&!b.disabled)b.click();return;}
     if(t.id==='f-login-code'||t.id==='f-login-pid'){e.preventDefault();document.querySelector('[data-act="login"]').click();}
     else if(t.id==='f-t-pin'){e.preventDefault();document.querySelector('[data-act="t-open"]').click();}
     else if(t.tagName==='A'&&t.dataset.act){e.preventDefault();t.click();}

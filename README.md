@@ -89,7 +89,7 @@ Firebase má anglické rozhraní. Pokud ho máš česky, názvy tlačítek jsou 
 1. Firebase konzole → **Authentication** → karta **Settings** → **Authorized domains**.
 2. **Add domain** → napiš `TVUJUCET.github.io` (bez https a bez /skolanet) → **Add**.
 
-Hotovo. Otevři odkaz z kroku 2.3. Dole na přihlašovací obrazovce musí být napsáno **„verze 1.1.0 · Firebase“**.
+Hotovo. Otevři odkaz z kroku 2.3. Dole na přihlašovací obrazovce musí být napsáno **„verze 1.2.0 · Firebase“**.
 Když aplikace hlásí chybu, řekne ti, který krok chybí.
 
 ---
@@ -139,10 +139,15 @@ Podrobný průběh hodiny (EUR, 45 minut) je v samostatné přípravě. Tady jen
 4. **Na konci:** stáhni *záznam* a *matici práv* (CSV) → *Ukončit a smazat hru*.
 
 **Škodič**
-- Navenek je to obyčejný žák (má kód jako ostatní žáci, např. Z5). V menu má navíc položku *Moje poznámky* s šesti tajnými misemi.
-- Mise: vydávat se za někoho jiného, získat zbytečné oprávnění, opravit si známku, přihlásit se do zapomenutého účtu `test.7x`, podívat se na cizí známky, smazat záznam.
-- Heslo k účtu `test.7x` je jedno z nejčastějších hesel (najdeš ho v `app.js` v konstantě `TEST_PASS`). Škodič dostává postupně nápovědy. Každý neúspěšný pokus vidí správci jako bezpečnostní upozornění a můžou účet zablokovat.
-- Kdo je škodič, vidíš ty na kartě *Hráči a práva*. Na projektoru se ukáže až po kliknutí *Odhalit škodiče*.
+- Navenek je to obyčejný žák (má kód jako ostatní žáci, např. Z5). V menu má navíc položku *Moje poznámky*. Radit mu nemusíš, všechno najde tam:
+  - **Plán**: 8 kroků v pořadí, vždy jeden „TEĎ“ s návodem, tlačítkem *Jdi tam* a nápovědami.
+  - **Pátrání**: prohledává místa ve škole a skládá heslo k zapomenutému účtu `test.7x`.
+  - **Výmluvník**: napíše za něj žádost, ve které se vydává za učitele.
+  - **Účet test.7x**: přihlášení. Nápovědy přibývají s každým špatným pokusem.
+- Heslo je pro každou hru jiné. Najdeš ho na kartě *Hráči a práva* v řádku `test.7x`.
+- Po 4 špatných pokusech ve třídě dostanou správci bezpečnostní upozornění a můžou účet zablokovat.
+- Klávesa **Esc** poznámky rychle schová.
+- Kdo je škodič, vidíš na kartě *Hráči a práva*. Na projektoru se ukáže až po kliknutí *Odhalit škodiče*, i s tím, kde našel heslo.
 - Škodiče lze při zakládání hry vypnout.
 
 **Dvojice**
@@ -156,7 +161,7 @@ Podrobný průběh hodiny (EUR, 45 minut) je v samostatné přípravě. Tady jen
 - **Nová verze od Clauda:** nahraj nové `app.js` / `index.html` přes **Add file → Upload files**. Stejnojmenné soubory se přepíšou a v historii zůstane i stará verze. **`firebase-config.js` nepřepisuj**, jinak přijdeš o své nastavení.
 - **Pojmenuj funkční verzi:** vpravo *Releases → Create a new release* → tag `v1.0.0` → *Publish release*. Kdykoli se k ní vrátíš.
 - **Vrácení zpět:** otevři starý commit → *Browse files* → stáhni si starou verzi souboru a nahraj ji znovu. Pohodlnější je aplikace **GitHub Desktop** (Historie → pravé tlačítko → *Revert changes in commit*).
-- Číslo verze je v `app.js` na řádku `const APP_VERSION='1.1.0'` a ukazuje se dole na přihlašovací obrazovce. Podle něj poznáš, že žáci vidí novou verzi. Pokud ji nevidí, dej **Ctrl+F5**.
+- Číslo verze je v `app.js` na řádku `const APP_VERSION='1.2.0'` a ukazuje se dole na přihlašovací obrazovce. Podle něj poznáš, že žáci vidí novou verzi. Pokud ji nevidí, dej **Ctrl+F5**.
 
 ---
 
