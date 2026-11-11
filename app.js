@@ -943,7 +943,8 @@ function skSteps(real){
   ];
 }
 function skHead(real){
-  return '<div class="card dark skhead"><div class="row" style="justify-content:space-between;align-items:center"><div><div class="eyebrow light">Tajná role · krycí jméno STÍN</div><h2 style="margin:4px 0 0">Jsi škodič</h2></div><button class="btn" data-act="mod" data-mod="uvod">'+ic('eye',16)+' Rychle schovat <span class="kbd">Esc</span></button></div>'+
+  /* schválně obyčejná bílá karta: na dálku nesmí vypadat jinak než obrazovky ostatních žáků */
+  return '<div class="card skhead"><div class="row" style="justify-content:space-between;align-items:center"><div><div class="eyebrow">Tajná role · krycí jméno STÍN</div><h2 style="margin:4px 0 0">Jsi škodič</h2></div><button class="btn" data-act="mod" data-mod="uvod">'+ic('eye',16)+' Rychle schovat <span class="kbd">Esc</span></button></div>'+
    '<p style="margin-top:8px">Navenek jsi obyčejný žák <b>'+esc(real.name)+'</b> ('+esc(real.pid)+'). <b>Cíl:</b> splnit co nejvíc misí a nenechat se odhalit. Na konci tě bude třída hledat v záznamu.</p>'+
    '<p class="small" style="margin-top:6px">Pravidlo: škodíš jen tady ve hře. Nikoho nepodváděj doopravdy a nesahej na cizí počítač. Učitel ti radit nebude – všechno potřebné je tady.</p></div>';
 }
