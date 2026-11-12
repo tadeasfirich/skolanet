@@ -1,5 +1,13 @@
 # Změny
 
+## 1.3.0 – 2026-11-12
+### Přidáno
+- **Žádosti vyřízené rolí**: když správce přidá člověka do role (nebo do role přidá oprávnění) a ten člověk má ve frontě žádost o totéž oprávnění, žádost se sama označí jako vyřízená („samo – už má přes roli“). Totéž platí, když mu oprávnění správce přidělí ručně.
+- Správce ve frontě vidí: „Díky rolím se samo vyřídilo N žádostí“ a kolik práce to ušetřilo.
+- Projektor, nová sekce **Úspora díky rolím**: kolik žádostí role vyřídily samy, kolik jich vůbec nemuselo vzniknout, kolik času to ušetřilo správcům a kolik uživatelům. Rozpad podle role ve hře (žák, rodič, učitel) i podle vytvořené role.
+- Výpočet: počet žádostí × průměrný čas ručně vyřízené žádosti z dané hodiny (správce: od „Vyřídit“ do rozhodnutí; uživatel: čekání v 1. kole). Když data chybí, použije se odhad 30 s / 90 s a je to tak označené.
+- Na kartě Řízení hry přibyla dlaždice s úsporou.
+
 ## 1.2.0 – 2026-11-11
 ### Přidáno – opora pro škodiče (po zpětné vazbě z hodiny)
 Škodič teď uspěje sám, bez nápadné pomoci učitele. „Moje poznámky“ mají čtyři záložky:

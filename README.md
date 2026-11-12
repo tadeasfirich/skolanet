@@ -89,7 +89,7 @@ Firebase má anglické rozhraní. Pokud ho máš česky, názvy tlačítek jsou 
 1. Firebase konzole → **Authentication** → karta **Settings** → **Authorized domains**.
 2. **Add domain** → napiš `TVUJUCET.github.io` (bez https a bez /skolanet) → **Add**.
 
-Hotovo. Otevři odkaz z kroku 2.3. Dole na přihlašovací obrazovce musí být napsáno **„verze 1.2.0 · Firebase“**.
+Hotovo. Otevři odkaz z kroku 2.3. Dole na přihlašovací obrazovce musí být napsáno **„verze 1.3.0 · Firebase“**.
 Když aplikace hlásí chybu, řekne ti, který krok chybí.
 
 ---
@@ -135,7 +135,7 @@ Podrobný průběh hodiny (EUR, 45 minut) je v samostatné přípravě. Tady jen
 **Na začátku hodiny**
 1. **Veyon:** označ všechny počítače → *Otevřít webovou stránku* → odkaz z kroku 2.3 (bez `#test`).
 2. **Fáze** přepínáš na kartě *Řízení hry*. U každé fáze vidíš, co udělat, co říct a kolik minut fáze podle plánu má. Nahoře běží stopky fáze. Když plán přetáhneš, zežloutnou.
-3. **Projektor:** karta *Projektor*. Obsah se mění podle fáze. V reflexi postupně: Srovnání kol → Matice → Srovnej se skutečností → Nebezpečná práva → Detektivka → Shrnutí.
+3. **Projektor:** karta *Projektor*. Obsah se mění podle fáze. V reflexi postupně: Srovnání kol → Úspora díky rolím → Matice → Srovnej se skutečností → Nebezpečná práva → Detektivka → Shrnutí.
 4. **Na konci:** stáhni *záznam* a *matici práv* (CSV) → *Ukončit a smazat hru*.
 
 **Škodič**
@@ -161,7 +161,7 @@ Podrobný průběh hodiny (EUR, 45 minut) je v samostatné přípravě. Tady jen
 - **Nová verze od Clauda:** nahraj nové `app.js` / `index.html` přes **Add file → Upload files**. Stejnojmenné soubory se přepíšou a v historii zůstane i stará verze. **`firebase-config.js` nepřepisuj**, jinak přijdeš o své nastavení.
 - **Pojmenuj funkční verzi:** vpravo *Releases → Create a new release* → tag `v1.0.0` → *Publish release*. Kdykoli se k ní vrátíš.
 - **Vrácení zpět:** otevři starý commit → *Browse files* → stáhni si starou verzi souboru a nahraj ji znovu. Pohodlnější je aplikace **GitHub Desktop** (Historie → pravé tlačítko → *Revert changes in commit*).
-- Číslo verze je v `app.js` na řádku `const APP_VERSION='1.2.0'` a ukazuje se dole na přihlašovací obrazovce. Podle něj poznáš, že žáci vidí novou verzi. Pokud ji nevidí, dej **Ctrl+F5**.
+- Číslo verze je v `app.js` na řádku `const APP_VERSION='1.3.0'` a ukazuje se dole na přihlašovací obrazovce. Podle něj poznáš, že žáci vidí novou verzi. Pokud ji nevidí, dej **Ctrl+F5**.
 
 ---
 

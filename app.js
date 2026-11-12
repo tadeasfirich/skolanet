@@ -228,7 +228,7 @@ function visibleModules(){return MODULES.filter(m=>!m.secret||isSkodic());}
 const LOG_LABEL={
  'game.create':'Založení hry','phase.change':'Změna fáze','game.pause':'Pozastavení hry','game.resume':'Pokračování hry',
  'player.join':'Přihlášení do systému','player.logout':'Odhlášení','access.blocked':'Narazil(a) na zámek',
- 'request.create':'Žádost o oprávnění','request.approve':'Schválení žádosti','request.deny':'Zamítnutí žádosti',
+ 'request.create':'Žádost o oprávnění','request.approve':'Schválení žádosti','request.auto':'Žádost vyřízena rolí','request.deny':'Zamítnutí žádosti',
  'grant.add':'Přidělení oprávnění','grant.revoke':'Odebrání oprávnění','role.create':'Vytvoření role',
  'role.perm':'Změna oprávnění v roli','role.assign':'Přiřazení role','role.unassign':'Odebrání z role',
  'task.done':'Splněný úkol','trap.triggered':'Použito nebezpečné právo','grade.write':'Zápis známky','grade.edit':'Úprava známky',
@@ -337,7 +337,7 @@ function makeFirebaseDB(fs){
 /* =====================================================================
    4) STAV APLIKACE
    ===================================================================== */
-const APP_VERSION='1.2.0';
+const APP_VERSION='1.3.0';
 const COLS=['requests','grants','roles','players','edits','messages','log'];
 const S={
   db:null, local:false, ready:false, dl:null,
@@ -679,7 +679,7 @@ function vMyRequests(me){
 }
 function reqStatus(r){
   if(r.status==='pending')return '<span><span class="pill wait">čeká · <span class="wait since" data-since="'+r.at+'"></span></span></span>';
-  if(r.status==='approved')return '<span><span class="pill ok">schváleno</span>'+(r.via&&r.via.indexOf('role:')===0?' <span class="small muted">přes roli</span>':'')+'</span>';
+  if(r.status==='approved')return '<span><span class="pill ok">schváleno</span>'+(r.auto?' <span class="small muted">vyřízeno rolí</span>':r.via&&r.via.indexOf('role:')===0?' <span class="small muted">přes roli</span>':'')+'</span>';
   return '<span><span class="pill bad">zamítnuto</span> <span class="small">„'+esc(r.denyReason)+'“</span></span>';
 }
 
@@ -832,7 +832,10 @@ function pendingReqs(){return reqList().filter(r=>r.status==='pending').sort((a,
 function rolesList(){return Object.keys(S.cols.roles).map(k=>Object.assign({id:k},S.cols.roles[k])).sort((a,b)=>a.at-b.at);}
 VIEWS['sprava/fronta']=me=>{
   const q=pendingReqs(); const now=Date.now(); const ph=phase();
-  let h=securityAlert()+'<div class="card"><h2>Fronta žádostí <span class="pill '+(q.length?'wait':'ok')+'">'+q.length+' čeká</span></h2>';
+  let h=securityAlert();
+  const autoN=reqList().filter(r=>r.auto&&r.via&&r.via.indexOf('role:')===0).length;
+  if(autoN){const sv=roleSavings();h+='<div class="alert ok">'+ic('check',18)+'<div><b>Díky rolím se samo vyřídilo '+autoN+(autoN===1?' žádost':autoN<5?' žádosti':' žádostí')+'.</b> Lidé dostali oprávnění přes roli, takže jejich žádosti zmizely z fronty. A '+sv.tot.avoided+' dalších žádostí díky rolím vůbec nevzniklo. Dohromady jste ušetřili asi '+fmtMin(sv.tot.admin)+' práce.</div></div>';}
+  h+='<div class="card"><h2>Fronta žádostí <span class="pill '+(q.length?'wait':'ok')+'">'+q.length+' čeká</span></h2>';
   if(!q.length)h+='<p class="muted">Fronta je prázdná.</p>';
   else h+='<div class="queue">'+q.map(r=>{
     const pl=P_(r.pid); const lockedBy=r.lockBy&&r.lockBy!==me.pid&&r.lockUntil>now; const mine=r.lockBy===me.pid&&r.lockUntil>now;
@@ -851,7 +854,7 @@ VIEWS['sprava/fronta']=me=>{
   h+='</div>';
   const done=reqList().filter(r=>r.status!=='pending').sort((a,b)=>b.decidedAt-a.decidedAt).slice(0,12);
   if(done.length)h+='<div class="card" style="margin-top:16px"><h3>Naposledy vyřízené</h3><div class="tbl-wrap"><table class="t"><thead><tr><th>Kdo</th><th>Oprávnění</th><th>Výsledek</th><th>Rozhodl</th><th>Čekal</th></tr></thead><tbody>'+
-    done.map(r=>{const pl=P_(r.pid),d=P_(r.decidedBy);return '<tr><td>'+esc(pl?pl.name:r.pid)+'</td><td>'+esc(P[r.perm]?P[r.perm].name:r.perm)+'</td><td>'+(r.status==='approved'?'<span class="pill ok">schváleno</span>'+(r.via&&r.via.indexOf('role:')===0?' <span class="small">přes roli</span>':''):'<span class="pill bad">zamítnuto</span> <span class="small">„'+esc(r.denyReason)+'“</span>')+'</td><td>'+esc(d?d.name:'')+'</td><td class="num">'+fmtDur((r.decidedAt-r.at)/1000)+'</td></tr>';}).join('')+'</tbody></table></div></div>';
+    done.map(r=>{const pl=P_(r.pid),d=P_(r.decidedBy);return '<tr><td>'+esc(pl?pl.name:r.pid)+'</td><td>'+esc(P[r.perm]?P[r.perm].name:r.perm)+'</td><td>'+(r.status==='approved'?'<span class="pill ok">schváleno</span>'+(r.auto?' <span class="small">samo – už má přes roli</span>':r.via&&r.via.indexOf('role:')===0?' <span class="small">přes roli</span>':''):'<span class="pill bad">zamítnuto</span> <span class="small">„'+esc(r.denyReason)+'“</span>')+'</td><td>'+esc(d?d.name:'')+'</td><td class="num">'+fmtDur((r.decidedAt-r.at)/1000)+'</td></tr>';}).join('')+'</tbody></table></div></div>';
   return h;
 };
 VIEWS['sprava/uzivatele']=me=>{
@@ -1118,7 +1121,8 @@ function tRizeni(){
   h+='<div class="stats"><div class="stat"><div class="v">'+joined+' / '+players().length+'</div><div class="k">hráčů připojeno</div></div>'+
     '<div class="stat"><div class="v">'+pend+'</div><div class="k">žádostí čeká ve frontě</div></div>'+
     '<div class="stat"><div class="v">'+all+'</div><div class="k">žádostí celkem</div></div>'+
-    '<div class="stat"><div class="v">'+rolesList().length+'</div><div class="k">vytvořených rolí</div></div></div>';
+    '<div class="stat"><div class="v">'+rolesList().length+'</div><div class="k">vytvořených rolí</div></div>'+
+    (function(){const t=roleSavings().tot;return (t.auto+t.avoided)?'<div class="stat"><div class="v">'+(t.auto+t.avoided)+'</div><div class="k">žádostí ušetřily role · správcům '+fmtMin(t.admin)+', uživatelům '+fmtMin(t.user)+'</div></div>':'';})()+'</div>';
   h+='<div class="card"><h2>Export pro portfolio</h2><div class="row"><button class="btn" data-act="csv-log">Stáhnout záznam (CSV)</button><button class="btn" data-act="csv-matrix">Stáhnout matici práv (CSV)</button></div><p class="small muted" style="margin-top:6px">Soubory se otevřou v Excelu (oddělovač středník, kódování UTF-8).</p></div>';
   h+='<div class="card dangerbox"><h2>Ukončit a smazat hru</h2><p class="small muted" style="margin-bottom:10px">Smaže všechna data této hry (žádosti, práva, role, záznam). Pak můžeš založit novou hru pro další třídu. Nejdřív si stáhni exporty.</p>';
   if(S.ui.delProgress)h+='<p><b>'+esc(S.ui.delProgress)+'</b></p>';
@@ -1207,6 +1211,53 @@ function roundStats(r){
   const longest=list.filter(q=>q.status==='pending').reduce((m,q)=>Math.max(m,(now-q.at)/1000),0);
   return {count:list.length,pending:list.filter(q=>q.status==='pending').length,avg,rep,top,longest,approved:list.filter(q=>q.status==='approved').length,denied:list.filter(q=>q.status==='denied').length};
 }
+/* Kolik času role ušetřily.
+   - vyřízeno rolí: čekající žádosti, které se samy uzavřely, když role dala oprávnění
+   - nemuselo vzniknout: oprávnění, která člověk dostal přes roli a nikdy o ně nežádal
+   Čas správce na 1 žádost = od „Vyřídit“ do rozhodnutí (průměr z ručně vyřízených).
+   Čas uživatele na 1 žádost = od odeslání do rozhodnutí (průměr z ručně vyřízených v kole 1). */
+const EST_ADMIN=30, EST_WAIT=90;
+function avgOf(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0;}
+function roleSavings(){
+  const all=reqList(); const manual=all.filter(r=>r.status!=='pending'&&!r.auto&&r.decidedAt);
+  const m1=manual.filter(r=>r.round===1); const base=m1.length?m1:manual;
+  const waits=base.map(r=>(r.decidedAt-r.at)/1000);
+  const handles=manual.filter(r=>r.claimedAt&&r.decidedAt>=r.claimedAt).map(r=>(r.decidedAt-r.claimedAt)/1000);
+  const avgWait=waits.length?avgOf(waits):EST_WAIT, avgAdmin=handles.length?avgOf(handles):EST_ADMIN;
+  const byRole={}, byGame={};
+  const add=(map,k,f)=>{map[k]=map[k]||{auto:0,avoided:0,user:0,admin:0};f(map[k]);};
+  all.filter(r=>r.auto&&r.via&&r.via.indexOf('role:')===0).forEach(r=>{
+    const rid_=r.via.slice(5); const pl=P_(r.pid); const user=Math.max(0,avgWait-(r.decidedAt-r.at)/1000);
+    const f=o=>{o.auto++;o.user+=user;o.admin+=avgAdmin;};
+    add(byRole,rid_,f); if(pl)add(byGame,pl.role,f);});
+  roster().forEach(p=>{const src=permSources(p.pid);
+    Object.keys(src).forEach(perm=>{const role=src[perm].find(x=>x.type==='role');if(!role)return;
+      if(all.some(r=>r.pid===p.pid&&r.perm===perm))return;
+      const f=o=>{o.avoided++;o.user+=avgWait;o.admin+=avgAdmin;};
+      add(byRole,role.rid,f); add(byGame,p.role,f);});});
+  const tot={auto:0,avoided:0,user:0,admin:0}; Object.values(byGame).forEach(o=>{tot.auto+=o.auto;tot.avoided+=o.avoided;tot.user+=o.user;tot.admin+=o.admin;});
+  return {byRole,byGame,tot,avgWait,avgAdmin,estWait:!waits.length,estAdmin:!handles.length};
+}
+function fmtMin(sec){sec=Math.round(sec);if(sec<60)return sec+' s';const m=Math.floor(sec/60),s_=sec%60;return m+' min'+(s_?' '+s_+' s':'');}
+function pUspora(){
+  const S_=roleSavings(), t=S_.tot;
+  let h='<h1>Kolik času ušetřily role</h1>';
+  if(!t.auto&&!t.avoided)return h+'<div class="card"><p class="muted">Zatím nic. Úspora se ukáže, až správci ve 2. kole vytvoří role a přiřadí do nich lidi.</p></div>';
+  h+='<div class="stats"><div class="stat hero"><div class="v">'+(t.auto+t.avoided)+'</div><div class="k">žádostí správci nemuseli řešit</div></div>'+
+   '<div class="stat"><div class="v">'+t.auto+'</div><div class="k">čekajících žádostí vyřídila role sama</div></div>'+
+   '<div class="stat"><div class="v">'+t.avoided+'</div><div class="k">žádostí vůbec nemuselo vzniknout</div></div>'+
+   '<div class="stat"><div class="v">'+fmtMin(t.admin)+'</div><div class="k">ušetřeno správcům</div></div>'+
+   '<div class="stat"><div class="v">'+fmtMin(t.user)+'</div><div class="k">ušetřeno uživatelům (čekání)</div></div></div>';
+  const gr=ROLE_ORDER.filter(r=>S_.byGame[r]);
+  h+='<div class="card"><h2>Podle role ve hře</h2><table class="t"><thead><tr><th>Role</th><th>Vyřízeno rolí</th><th>Nemuselo vzniknout</th><th>Ušetřeno uživatelům</th><th>Ušetřeno správcům</th></tr></thead><tbody>'+
+   gr.map(r=>{const o=S_.byGame[r];return '<tr><td>'+roleChip(r)+'</td><td class="num">'+o.auto+'</td><td class="num">'+o.avoided+'</td><td class="num"><b>'+fmtMin(o.user)+'</b></td><td class="num">'+fmtMin(o.admin)+'</td></tr>';}).join('')+'</tbody></table></div>';
+  const rl=rolesList().filter(r=>S_.byRole[r.id]);
+  if(rl.length)h+='<div class="card"><h2>Podle vytvořené role</h2><table class="t"><thead><tr><th>Role</th><th>Členů</th><th>Vyřízeno rolí</th><th>Nemuselo vzniknout</th><th>Ušetřeno uživatelům</th><th>Ušetřeno správcům</th></tr></thead><tbody>'+
+   rl.map(r=>{const o=S_.byRole[r.id];return '<tr><td><b>'+esc(r.name)+'</b></td><td class="num">'+roster().filter(p=>r.members&&r.members[p.pid]&&r.members[p.pid].on).length+'</td><td class="num">'+o.auto+'</td><td class="num">'+o.avoided+'</td><td class="num">'+fmtMin(o.user)+'</td><td class="num">'+fmtMin(o.admin)+'</td></tr>';}).join('')+'</tbody></table></div>';
+  h+='<p class="small muted">Výpočet: počet žádostí × průměrný čas jedné ručně vyřízené žádosti z této hodiny. Správce: '+fmtMin(S_.avgAdmin)+(S_.estAdmin?' (odhad)':'')+' od otevření žádosti do rozhodnutí. Uživatel: '+fmtMin(S_.avgWait)+(S_.estWait?' (odhad)':'')+' čekání od odeslání do vyřízení. U žádostí vyřízených rolí se odečte, jak dlouho už člověk čekal.</p>';
+  h+='<div class="note">Otázka pro třídu: Proč skutečné školní systémy přidělují oprávnění rolím, a ne každému zvlášť?</div>';
+  return h;
+}
 function barChart(title,v1,v2,fmt){
   const W=320,H=210,top=30,base=160,maxv=Math.max(v1,v2,1)*1.18;const bh=v=>(base-top)*v/maxv;
   const bar=(x,v,cls)=>'<rect x="'+x+'" y="'+(base-bh(v))+'" width="80" height="'+Math.max(bh(v),1)+'" rx="3" style="fill:var('+cls+')"/><text x="'+(x+40)+'" y="'+(base-bh(v)-8)+'" text-anchor="middle" font-size="18" font-weight="700">'+esc(fmt(v))+'</text>';
@@ -1217,9 +1268,9 @@ function barChart(title,v1,v2,fmt){
 function tProjektor(){
   const ph=phase(); let sec=S.ui.projSec;
   if(sec==='auto')sec=ph===0?'join':ph===1||ph===3?'live':ph===2?'stop':'kola';
-  const secs=[['join','Připojení'],['live','Živě'],['stop','Zastavení'],['kola','Srovnání kol'],['matice','Matice role × práva'],['realita','Srovnej se skutečností'],['nebezpecne','Nebezpečná práva'],['detektivka','Detektivka'],['shrnuti','Shrnutí'],['zaznam','Záznam']];
+  const secs=[['join','Připojení'],['live','Živě'],['stop','Zastavení'],['kola','Srovnání kol'],['uspora','Úspora díky rolím'],['matice','Matice role × práva'],['realita','Srovnej se skutečností'],['nebezpecne','Nebezpečná práva'],['detektivka','Detektivka'],['shrnuti','Shrnutí'],['zaznam','Záznam']];
   let h='<div class="tabs">'+secs.map(s=>'<button class="tab'+(sec===s[0]?' on':'')+'" data-act="proj" data-s="'+s[0]+'">'+s[1]+'</button>').join('')+'<button class="tab'+(S.ui.projSec==='auto'?' on':'')+'" data-act="proj" data-s="auto" title="Obsah podle fáze">podle fáze</button></div>';
-  h+='<div class="proj stack" style="gap:18px">'+({join:pJoin,live:pLive,stop:pStop,kola:pKola,matice:pMatice,nebezpecne:pDanger,detektivka:pDetective,shrnuti:pSummary,zaznam:()=>'<div class="card">'+vLog(false)+'</div>',realita:pReality}[sec])()+'</div>';
+  h+='<div class="proj stack" style="gap:18px">'+({join:pJoin,live:pLive,stop:pStop,kola:pKola,uspora:pUspora,matice:pMatice,nebezpecne:pDanger,detektivka:pDetective,shrnuti:pSummary,zaznam:()=>'<div class="card">'+vLog(false)+'</div>',realita:pReality}[sec])()+'</div>';
   return h;
 }
 function pJoin(){
@@ -1246,7 +1297,7 @@ function pKola(){
   return '<h1>Srovnání kola 1 a kola 2</h1><div class="card"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px">'+
     barChart('Počet žádostí',a.count,b.count,v=>String(Math.round(v)))+barChart('Průměrné čekání (min:s)',a.avg,b.avg,v=>fmtDur(v))+'</div>'+
     '<div class="legend" style="margin-top:8px"><span><i style="background:var(--lock);border:0"></i>Kolo 1</span><span><i style="background:var(--accent);border:0"></i>Kolo 2</span></div></div>'+
-    '<div class="stats"><div class="stat"><div class="v">'+rolesList().length+'</div><div class="k">rolí vytvořila třída</div></div><div class="stat"><div class="v">'+roleMembers+'</div><div class="k">přiřazení do rolí</div></div><div class="stat"><div class="v">'+viaRole+'</div><div class="k">žádostí vyřízeno přidáním do role</div></div></div>';
+    '<div class="stats"><div class="stat"><div class="v">'+rolesList().length+'</div><div class="k">rolí vytvořila třída</div></div><div class="stat"><div class="v">'+roleMembers+'</div><div class="k">přiřazení do rolí</div></div><div class="stat"><div class="v">'+viaRole+'</div><div class="k">žádostí vyřízeno přes roli (z toho '+reqList().filter(q=>q.auto&&q.via&&q.via.indexOf('role:')===0).length+' samo)</div></div></div>';
 }
 function roleFraction(role,perm){const m=roster().filter(p=>p.role===role);if(!m.length)return null;const n=m.filter(p=>permsOf(p.pid).has(perm)).length;return {n,of:m.length};}
 function pMatice(){
@@ -1560,13 +1611,14 @@ const ACT={
     for(const o of pendingReqs())if(o.id!==d.id&&o.lockBy===me.pid&&o.lockUntil>Date.now())await W(()=>dref(gp('requests')+'/'+o.id).update({lockBy:null,lockUntil:0}),'fronta');
     const res=await W(()=>S.db.claim(gp('requests')+'/'+d.id,me.pid,120000),'fronta');
     if(res==='locked')toast('Tuhle žádost řeší kolega.','lock');else if(res!=='ok')toast('Žádost už je vyřízená.');
+    else{const r0=S.cols.requests[d.id];if(!r0||!r0.claimedAt)await W(()=>ref.update({claimedAt:Date.now()}),'fronta');}
     return;
   }
   try{const a=await ref.acquire({holder:me.pid,ttlMs:4000});if(a&&a.acquired===false){toast('Tuhle žádost právě otevírá kolega.','lock');return;}}catch(e){}
   const r=await reqGet(d.id); if(!r||r.status!=='pending'){toast('Žádost už je vyřízená.');return;}
   if(!lockOk(r,me)){toast('Tuhle žádost řeší kolega.','lock');return;}
   for(const o of pendingReqs())if(o.id!==d.id&&o.lockBy===me.pid&&o.lockUntil>Date.now())await W(()=>dref(gp('requests')+'/'+o.id).update({lockBy:null,lockUntil:0}),'fronta');
-  await W(()=>ref.update({lockBy:me.pid,lockUntil:Date.now()+120000}),'fronta');
+  await W(()=>ref.update(Object.assign({lockBy:me.pid,lockUntil:Date.now()+120000},r.claimedAt?{}:{claimedAt:Date.now()})),'fronta');
  },
  async 'rq-release'(d){await W(()=>dref(gp('requests')+'/'+d.id).update({lockBy:null,lockUntil:0}),'fronta');},
  async 'rq-approve'(d){await approveReq(d.id,null);},
@@ -1584,6 +1636,7 @@ const ACT={
   const src=permSources(pid)[perm]||[]; if(src.some(x=>x.type==='direct'||x.type==='builtin')){toast('Tohle oprávnění už má.');return;}
   await grantDirect(pid,perm,me.pid,null);
   logEvent('grant.add',{pid,perm},'ok',pid===me.pid?'sám sobě':''); toast('Oprávnění přiděleno.','ok');
+  scheduleResolve();
  },
  async 'mg-revoke'(){
   if(!need('perms.grant'))return; const me=meP(); const pid=dv('f-mg-pid',roster()[0].pid),perm=dv('f-mg-perm','grades.own');
@@ -1600,6 +1653,7 @@ const ACT={
   const at=Date.now(); const perms={}; PERMS.forEach(p=>{if(dv('f-rc-p-'+p.code,false))perms[p.code]={on:true,by:me.pid,at};});
   await W(()=>dref(gp('roles')+'/'+rid()).set({name,perms,members:{},createdBy:me.pid,at}),'role');
   logEvent('role.create',{roleName:name},'ok',Object.keys(perms).map(c=>P[c].name).join(', ')||'bez oprávnění');
+  scheduleResolve();
   clearDrafts('f-rc-'); toast('Role „'+name+'“ vytvořena.','ok');
  },
  async 'role-perm'(d,el){
@@ -1607,6 +1661,7 @@ const ACT={
   const on=!!el.checked; const p={perms:{}};p.perms[d.perm]={on,by:me.pid,at:Date.now()};
   await W(()=>dref(gp('roles')+'/'+d.rid).update(p),'role');
   logEvent('role.perm',{roleName:r.name,perm:d.perm},on?'přidáno':'odebráno');
+  if(on)scheduleResolve();
  },
  'role-selrole'(d){roster().forEach(p=>{if(p.role===d.role)S.drafts['f-rm-'+d.rid+'-'+p.pid]=true;});},
  async 'role-members'(d){
@@ -1618,6 +1673,7 @@ const ACT={
   clearDrafts('f-rm-'+d.rid+'-');
   for(const c of changes)await logEvent(c[1]?'role.assign':'role.unassign',{pid:c[0],roleName:r.name},'ok');
   toast('Členové role uloženi ('+changes.length+' změn).','ok');
+  scheduleResolve();
  },
  ttab(d){S.ui.tTab=d.t;},
  proj(d){S.ui.projSec=d.s;},
@@ -1706,6 +1762,30 @@ const ACT={
   logEvent('account.block',{pid:'T1'},'ok'); toast('Účet test.7x je zablokovaný.','ok');
  }
 };
+/* Když uživatel oprávnění už má (typicky ho dostal přes roli), jeho čekající žádost o totéž
+   se sama označí jako vyřízená. Správci tak nemusí odklikávat žádosti, které role už vyřešila. */
+let resolveTimer=null, resolving=false, resolveAgain=false;
+function scheduleResolve(){clearTimeout(resolveTimer);resolveTimer=setTimeout(resolveCovered,250);}
+async function resolveCovered(){
+  if(resolving){resolveAgain=true;return;}
+  const me=meP(); if(!me||!can('perms.grant'))return;
+  resolving=true; let n=0;
+  try{
+    for(const r of pendingReqs()){
+      const src=permSources(r.pid)[r.perm]; if(!src||!src.length)continue;
+      const role=src.find(x=>x.type==='role');
+      const fresh=await reqGet(r.id); if(!fresh||fresh.status!=='pending')continue;
+      const at=Date.now();
+      await W(()=>dref(gp('requests')+'/'+r.id).update({status:'approved',auto:true,decidedBy:me.pid,decidedAt:at,via:role?'role:'+role.rid:'direct',lockBy:null,lockUntil:0}),'rozhodnutí');
+      const tgt={pid:r.pid,perm:r.perm}; if(role)tgt.roleName=role.name;
+      logEvent('request.auto',tgt,'vyřízeno',role?'oprávnění už má přes roli':'oprávnění už má');
+      n++;
+    }
+  }catch(e){console.error(e);}
+  resolving=false;
+  if(n)toast('Role vyřídila '+n+(n===1?' žádost':n<5?' žádosti':' žádostí')+' ve frontě za tebe.','ok');
+  if(resolveAgain){resolveAgain=false;scheduleResolve();}
+}
 async function approveReq(id,roleId){
   if(!need('perms.grant'))return; const me=meP();
   const r=await reqGet(id); if(!r||r.status!=='pending'){toast('Žádost už je vyřízená.');return;} if(!lockOk(r,me)){toast('Tuhle žádost řeší kolega.','lock');return;}
@@ -1718,6 +1798,7 @@ async function approveReq(id,roleId){
   const tgt={pid:r.pid,perm:r.perm}; if(roleName)tgt.roleName=roleName;
   logEvent('request.approve',tgt,'schváleno',r.reason);
   toast('Schváleno.','ok');
+  if(roleId)scheduleResolve();
 }
 
 /* =====================================================================
